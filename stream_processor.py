@@ -60,30 +60,31 @@ def process_stream(name, source):
     print(f"[INFO] Starting processor for {name}")
 
     # FFmpeg menerima RAWVIDEO dari stdin
+    cmd = [
+        "ffmpeg",
+        "-rtsp_transport", "tcp",
+        "-itsoffset", "2",
+        "-i", source,
+
+        "-c:v", "copy",
+        "-an",
+        "-f", "rtsp",
+        f"rtsp://localhost:8554/{name}",
+    ]
+
     # cmd = [
     #     "ffmpeg",
     #     "-rtsp_transport", "tcp",
     #     "-i", source,
 
-    #     "-c:v", "copy",
-    #     "-an",
+    #     "-c:v", "libx264",
+    #     "-preset", "veryfast",
+    #     "-tune", "zerolatency",
+    #     "-pix_fmt", "yuv420p",
+
     #     "-f", "rtsp",
     #     f"rtsp://localhost:8554/{name}",
     # ]
-
-    cmd = [
-        "ffmpeg",
-        "-rtsp_transport", "tcp",
-        "-i", source,
-
-        "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-tune", "zerolatency",
-        "-pix_fmt", "yuv420p",
-
-        "-f", "rtsp",
-        f"rtsp://localhost:8554/{name}",
-    ]
 
     process = subprocess.Popen(cmd)
     process.wait()

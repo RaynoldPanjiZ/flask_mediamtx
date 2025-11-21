@@ -2,35 +2,40 @@
 <html>
 <head>
     <meta charset="UTF-8"/>
-    <title>HLS All Browser</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>WebRTC All Browser</title>
+    <script src="{{ url_for('static', filename='js/reader.js') }}"></script>
     <style>
-        video { width: 45%; background:black; margin:10px; }
+        video { background:black; margin:10px; }
     </style>
 </head>
 <body>
 
-    <video id="cam1" controls autoplay muted></video>
-
-<script>
-
-function playHLS(videoId, url){
-    const mediaMTX_ip = "{{ MEDIAMTX_HOST }}";
-    const video = document.getElementById(videoId);
-
-    if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(url);
-        hls.attachMedia(video);
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = url;
-    }
-}
-
-playHLS("cam1",  "http://192.168.45.39:8888/cam1/index.m3u8");
-// playHLS("cam1",  "http://192.168.1.12:8888/cam1/index.m3u8");
-
-</script>
+    <video id="cam1" controls muted autoplay width="640" height="480"></video>
 
 </body>
+<script>
+    let reader = null;
+    const mediaMTX_ip = "{{ MEDIAMTX_HOST }}";
+
+    window.addEventListener("load", () => {
+        reader = new MediaMTXWebRTCReader({
+            url: `http://${mediaMTX_ip}:8889/cam1`,
+            user: "", // fill if needed
+            pass: "", // fill if needed
+            token: "", // fill if needed
+            onError: (err) => {
+                console.error(err);
+            },
+            onTrack: (evt) => {
+                document.getElementById("cam1").srcObject = evt.streams[0];
+            },
+        });
+    });
+
+    window.addEventListener("beforeunload", () => {
+        if (reader !== null) {
+            reader.close();
+        }
+    });
+</script>
 </html>
