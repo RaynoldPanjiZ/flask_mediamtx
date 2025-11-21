@@ -10,18 +10,54 @@ sources = {
     "cam1": "rtsp://admin:aery2021!@192.168.45.167:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif"
 }
 
+# def process_stream(name, source):
+#     print(f"[INFO] Starting processor for {name}")
+
+#     cap = cv2.VideoCapture(source)
+#     if not cap.isOpened():
+#         print(f"[ERROR] Cannot open {source}")
+#         return
+
+#     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
+#     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
+#     fps = cap.get(cv2.CAP_PROP_FPS)
+#     if fps <= 0: fps = 25
+
+#     # FFmpeg menerima RAWVIDEO dari stdin
+#     ffmpeg = subprocess.Popen([
+#         "ffmpeg",
+#         "-re",
+#         "-f", "rawvideo",
+#         "-pix_fmt", "bgr24",
+#         "-s", f"{width}x{height}",
+#         "-r", str(fps),
+#         "-i", "-",
+
+#         "-c:v", "libx264",
+#         "-pix_fmt", "yuv420p",
+#         "-preset", "veryfast",
+#         "-tune", "zerolatency",
+#         "-f", "rtsp",
+#         f"rtsp://localhost:8554/{name}",
+#     ], stdin=subprocess.PIPE)
+
+#     while True:
+#         ret, frame = cap.read()
+#         if not ret:
+#             print(f"[INFO] End of source: {source}")
+#             break
+
+#         # =======================
+#         #    FRAME PROCESSING
+#         # =======================
+#         cv2.rectangle(frame, (50,50), (250,200), (0,255,0), 3)
+#         cv2.putText(frame, f"STREAM: {name}", (50,40),
+#             cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+
+#         ffmpeg.stdin.write(frame.tobytes())
+
 def process_stream(name, source):
     print(f"[INFO] Starting processor for {name}")
-
-    cap = cv2.VideoCapture(source)
-    if not cap.isOpened():
-        print(f"[ERROR] Cannot open {source}")
-        return
-
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if fps <= 0: fps = 25
 
     # FFmpeg menerima RAWVIDEO dari stdin
     ffmpeg = subprocess.Popen([
@@ -29,9 +65,8 @@ def process_stream(name, source):
         "-re",
         "-f", "rawvideo",
         "-pix_fmt", "bgr24",
-        "-s", f"{width}x{height}",
-        "-r", str(fps),
-        "-i", "-",
+        "-s", f"640x480",
+        "-i", source,
 
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
@@ -41,20 +76,8 @@ def process_stream(name, source):
         f"rtsp://localhost:8554/{name}",
     ], stdin=subprocess.PIPE)
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print(f"[INFO] End of source: {source}")
-            break
-
-        # =======================
-        #    FRAME PROCESSING
-        # =======================
-        cv2.rectangle(frame, (50,50), (250,200), (0,255,0), 3)
-        cv2.putText(frame, f"STREAM: {name}", (50,40),
-            cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-
-        ffmpeg.stdin.write(frame.tobytes())
+    process = subprocess.Popen(ffmpeg)
+    process.wait()
 
 def start_all_streams():
     for name, src in sources.items():
