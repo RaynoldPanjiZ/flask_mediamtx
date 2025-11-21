@@ -3,23 +3,28 @@
 <head>
     <meta charset="UTF-8"/>
     <title>WebRTC All Browser</title>
+    <!-- https://mediamtx.org/docs/usage/embed-streams-in-a-website -->
     <script src="{{ url_for('static', filename='js/reader.js') }}"></script>
     <style>
         video { background:black; margin:10px; }
+        iframe { border:none; width:640px; height:480px; }
     </style>
 </head>
 <body>
 
-    <video id="cam1" controls muted autoplay width="640" height="480"></video>
+    <!-- <video id="mp41" controls muted autoplay width="640" height="480"></video> -->
+    <!-- <iframe src="http://192.168.1.12:8889/mp41" scrolling="no"></iframe> -->
+    <iframe src="http://192.168.45.39:8889/mp41" scrolling="no"></iframe>
 
 </body>
-<script>
+<!-- <script>
     let reader = null;
-    const mediaMTX_ip = "{{ MEDIAMTX_HOST }}";
+    const mediaMTX_ip = `{{ host }}`;
+    console.log("MediaMTX IP:", mediaMTX_ip);
 
     window.addEventListener("load", () => {
         reader = new MediaMTXWebRTCReader({
-            url: `http://${mediaMTX_ip}:8889/cam1`,
+            url: `http://${mediaMTX_ip}:8889/mp41`,
             user: "", // fill if needed
             pass: "", // fill if needed
             token: "", // fill if needed
@@ -27,7 +32,7 @@
                 console.error(err);
             },
             onTrack: (evt) => {
-                document.getElementById("cam1").srcObject = evt.streams[0];
+                document.getElementById("mp41").srcObject = evt.streams[0];
             },
         });
     });
@@ -37,5 +42,5 @@
             reader.close();
         }
     });
-</script>
+</script> -->
 </html>
