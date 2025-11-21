@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Client Viewer - {{ name }}</title>
+    <style>
+        iframe {
+            width: 100%;
+            height: 640px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Viewing Stream: {{ name }}</h2>
+
+<iframe 
+    src="http://{{ mtx_host }}:8889/{{ name }}" 
+    scrolling="no">
+</iframe>
+
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Control</title>
+</head>
+<body>
+
+<h2>Stream Control Panel</h2>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Name</th>
+        <th>Source</th>
+        <th>Status</th>
+        <th>Action</th>
+        <th>Client View</th>
+    </tr>
+
+    {% for name, src in streams.items() %}
+    <tr>
+        <td>{{ name }}</td>
+        <td>{{ src }}</td>
+        <td>
+            {% if is_running(name) %}
+                RUNNING
+            {% else %}
+                STOPPED
+            {% endif %}
+        </td>
+        <td>
+            {% if is_running(name) %}
+                <a href="/stop/{{ name }}">STOP</a>
+            {% else %}
+                <a href="/start/{{ name }}">START</a>
+            {% endif %}
+        </td>
+        <td>
+            <a href="/client/{{ name }}" target="_blank">OPEN</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>
