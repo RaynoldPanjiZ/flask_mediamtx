@@ -1,13 +1,18 @@
 import subprocess
 import threading
+import atexit
+import signal
+import time
 import os
+
 from config import STREAM_SOURCES
 
-stream_processes = {}      # name → subprocess.Popen
-stream_threads = {}        # name → thread obj
+processes = []   # simpan semua proses ffmpeg
+threads = []
+running = True   # flag global
 
 
-def build_ffmpeg_cmd(name, source):
+def build_ffmpeg_command(name, source):
     cmd = ["ffmpeg"]
 
     # INPUT SOURCES
@@ -34,44 +39,65 @@ def build_ffmpeg_cmd(name, source):
     return cmd
 
 
-def stream_worker(name, source):
-    cmd = build_ffmpeg_cmd(name, source)
-    proc = subprocess.Popen(cmd)
-    stream_processes[name] = proc
-    proc.wait()
-    stream_processes.pop(name, None)
+def process_stream(name, source):
+    global running
+    cmd = build_ffmpeg_command(name, source)
 
+    print(f"[STREAM] Starting FFmpeg for {name}")
 
-# === PUBLIC FUNCTIONS =====================================
-
-def start_stream(name):
-    """Start stream jika belum berjalan."""
-    if name in stream_processes:
-        return False  # sudah berjalan
-
-    if name not in STREAM_SOURCES:
-        return False
-
-    thread = threading.Thread(
-        target=stream_worker,
-        args=(name, STREAM_SOURCES[name]),
-        daemon=True
+    p = subprocess.Popen(
+        cmd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT
     )
-    thread.start()
-    stream_threads[name] = thread
-    return True
+    processes.append(p)
+
+    # tunggu sampai stop sinyal
+    while running and p.poll() is None:
+        time.sleep(0.5)
+
+    # stop FFmpeg
+    if p.poll() is None:
+        print(f"[STREAM] Terminating FFmpeg: {name}")
+        p.terminate()
+        try:
+            p.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            print(f"[STREAM] Killing FFmpeg: {name}")
+            p.kill()
 
 
-def stop_stream(name):
-    """Stop FFmpeg process."""
-    if name not in stream_processes:
-        return False
-
-    proc = stream_processes[name]
-    proc.terminate()
-    proc.kill()
-    return True
+def start_all():
+    for name, src in STREAM_SOURCES.items():
+        t = threading.Thread(target=process_stream, args=(name, src))
+        t.start()
+        threads.append(t)
 
 
-def is_running(name):
-    return name in stream_processes
+# ===========================================================
+# CLEAN SHUTDOWN HANDLER
+# ===========================================================
+
+def stop_all():
+    global running
+    running = False
+
+    print("\n[STOP] Stopping all FFmpeg processes...")
+
+    # terminate all processes
+    for p in processes:
+        if p.poll() is None:
+            p.terminate()
+            try:
+                p.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                p.kill()
+
+    print("[STOP] All FFmpeg processes stopped.")
+
+
+# Register shutdown cleanup
+atexit.register(stop_all)
+signal.signal(signal.SIGINT, lambda s, f: exit(0))
+signal.signal(signal.SIGTERM, lambda s, f: exit(0))
