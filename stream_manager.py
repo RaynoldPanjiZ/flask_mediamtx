@@ -47,9 +47,11 @@ def process_stream(name, source):
 
     p = subprocess.Popen(
         cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT
+        text=True,
+        bufsize=1
     )
     processes.append(p)
 
@@ -70,7 +72,11 @@ def process_stream(name, source):
 
 def start_all():
     for name, src in STREAM_SOURCES.items():
-        t = threading.Thread(target=process_stream, args=(name, src))
+        t = threading.Thread(
+            target=process_stream,
+            args=(name, src),
+            daemon=True  # <── Fix: daemon thread
+        )
         t.start()
         threads.append(t)
 
