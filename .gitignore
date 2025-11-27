@@ -222,4 +222,12 @@ mediamtx/mediamtx
 mediamtx/mediamtx_custom.yaml
 
 # Video files
-static/video/
+static/video/*.mp4
+static/video/*.avi
+static/video/*.mkv
+static/video/*.mov
+
+recordings/*.mp4
+recordings/*.avi
+recordings/*.mkv
+recordings/*.mov
