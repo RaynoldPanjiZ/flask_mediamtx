@@ -10,14 +10,25 @@
     <div class="col-md-6">
         <div class="card">
 
-            <div class="card-header bg-dark text-white d-flex justify-content-between">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <span>{{ name }}</span>
 
-                <!-- Record Button UI -->
-                <button id="btn-{{ name }}" class="btn btn-sm btn-danger"
-                        onclick="startRecord('{{ name }}')">
-                    Record
-                </button>
+                <div>
+                    <!-- Record Button -->
+                    <button id="btn-rec-{{ name }}"
+                            class="btn btn-sm btn-danger me-1"
+                            onclick="startRecord('{{ name }}')">
+                        Record
+                    </button>
+
+                    <!-- Stop Button -->
+                    <button id="btn-stop-{{ name }}"
+                            class="btn btn-sm btn-secondary"
+                            onclick="stopRecord('{{ name }}')"
+                            disabled>
+                        Stop
+                    </button>
+                </div>
             </div>
 
             <div class="card-body p-2">
@@ -35,43 +46,61 @@
 
 </div>
 
-
 <script>
-function startRecord(channel) {
-    const btn = document.getElementById("btn-" + channel);
-    btn.disabled = true;
-    btn.innerText = "Recording...";
+let timers = {};  // menyimpan setTimeout per-channel
 
-    // START RECORD
+function startRecord(channel) {
+    const recBtn = document.getElementById("btn-rec-" + channel);
+    const stopBtn = document.getElementById("btn-stop-" + channel);
+
+    recBtn.disabled = true;
+    recBtn.innerText = "Recording...";
+    stopBtn.disabled = false;
+
     fetch(`/api/record/start/${channel}`)
         .then(r => r.json())
         .then(data => {
             console.log("Recording started:", data);
 
-            // STOP otomatis setelah 10 menit (600.000 ms)
-            setTimeout(() => stopRecord(channel), 600000);
+            // auto stop setelah 10 menit = 600.000 ms
+            timers[channel] = setTimeout(() => {
+                stopRecord(channel);
+            }, 600000);
         })
         .catch(err => {
             console.error(err);
-            btn.disabled = false;
-            btn.innerText = "Record";
+            recBtn.disabled = false;
+            recBtn.innerText = "Record";
+            stopBtn.disabled = true;
         });
 }
 
 function stopRecord(channel) {
-    const btn = document.getElementById("btn-" + channel);
+    const recBtn = document.getElementById("btn-rec-" + channel);
+    const stopBtn = document.getElementById("btn-stop-" + channel);
+
+    // kalau ada timer dari auto-stop, hentikan
+    if (timers[channel]) {
+        clearTimeout(timers[channel]);
+        delete timers[channel];
+    }
+
+    stopBtn.disabled = true;
 
     fetch(`/api/record/stop/${channel}`)
         .then(r => r.json())
         .then(data => {
             console.log("Recording stopped:", data);
-            btn.disabled = false;
-            btn.innerText = "Record";
+
+            recBtn.disabled = false;
+            recBtn.innerText = "Record";
         })
         .catch(err => {
             console.error(err);
-            btn.disabled = false;
-            btn.innerText = "Record";
+
+            stopBtn.disabled = false;  
+            recBtn.disabled = false;
+            recBtn.innerText = "Record";
         });
 }
 </script>

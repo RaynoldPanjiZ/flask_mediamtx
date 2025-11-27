@@ -15,6 +15,9 @@ def start_record(channel):
     filename = f"{channel}-{start_str}-ONGOING.mp4"
     filepath = f"recordings/{filename}"
 
+    if not os.path.exists("recordings"):
+        os.makedirs("recordings")
+
     # record from MediaMTX RTSP proxy
     src = f"rtsp://{MEDIAMTX_HOST}:8554/{channel}"
 
