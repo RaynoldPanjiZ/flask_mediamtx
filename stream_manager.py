@@ -15,23 +15,31 @@ running = True   # flag global
 def build_ffmpeg_command(name, source):
     cmd = ["ffmpeg"]
 
-    # INPUT SOURCES
+    # INPUT Source setup (rtsp, mp4, v4l2, etc)
     if source.startswith("rtsp://"):
         cmd += ["-rtsp_transport", "tcp", "-i", source]
-
     elif source.endswith(".mp4") or os.path.isfile(source):
         cmd += ["-re", "-stream_loop", "-1", "-i", source]
-
     elif source.startswith("/dev/video"):
         cmd += ["-f", "v4l2", "-i", source]
-
     else:
         raise ValueError(f"Sumber tidak dikenal: {source}")
 
-    # OUTPUT KE MEDIAMTX (RTSP → WebRTC/HLS otomatis)
+    # OUTPUT Transcode to MediaMTX RTSP
+    # https://github.com/kukuhtw/ppv_stream_rust?tab=readme-ov-file
     cmd += [
-        "-c:v", "copy",
+        "-fflags", "nobuffer",
+        "-flags", "low_delay",
+
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-tune", "zerolatency",
+
+        "-g", "30",
+        "-keyint_min", "30",
+
         "-an",
+
         "-f", "rtsp",
         f"rtsp://localhost:8554/{name}"
     ]
