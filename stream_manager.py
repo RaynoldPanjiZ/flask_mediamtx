@@ -17,49 +17,39 @@ def build_ffmpeg_command(name, source):
 
     # INPUT Source setup (rtsp, mp4, v4l2, etc)
     if source.startswith("rtsp://"):
-        cmd += [
-            "-rtsp_transport", "tcp",
-            "-fflags", "+genpts",
-            "-use_wallclock_as_timestamps", "1",
-            "-stimeout", "3000000",          # 3 detik timeout
-            "-reorder_queue_size", "0",
-            "-i", source
-        ]
+        cmd += ["-rtsp_transport", "tcp", "-i", source]
     elif source.endswith(".mp4") or os.path.isfile(source):
-        cmd += [
-            "-re",
-            "-stream_loop", "-1",
-            "-fflags", "+genpts",
-            "-use_wallclock_as_timestamps", "1",
-            "-i", source
-        ]
+        cmd += ["-re", "-stream_loop", "-1", "-i", source]
     elif source.startswith("/dev/video"):
-        cmd += [
-            "-f", "v4l2",
-            "-thread_queue_size", "1024",
-            "-i", source
-        ]
+        cmd += ["-f", "v4l2", "-i", source]
     else:
         raise ValueError(f"Sumber tidak dikenal: {source}")
 
     # OUTPUT Transcode to MediaMTX RTSP
     cmd += [
-        "-c:v", "copy",
-        "-map", "0:v",
+        "-fflags", "+genpts",            # perbaiki PTS terus menerus
+        "-use_wallclock_as_timestamps", "1",
+        "-pkt_size", "1300",
+        "-flush_packets", "1",
 
-        # H.264 compatibility improvement
-        "-bsf:v", "h264_mp4toannexb",
+        "-bsf:v", "h264_metadata=video_full_range_flag=1",
+        "-maxrate", "5M",
+        "-bufsize", "5M",
 
-        # RT buffer and timestamp stability
-        "-rtbufsize", "256M",
-        "-max_delay", "0",
-        "-muxdelay", "0",
-        "-muxpreload", "0",
+        "-max_interleave_delta", "0",   # cegah ffmpeg 'menumpuk' packet
+        "-muxdelay", "0",               # paksa RTP realtime
+        "-muxpreload", "0",             # no buffering
 
-        # Required for some RTSP clients
-        "-flags", "+global_header",
+        "-vsync", "1",                  # stabilisasi frame pacing
+        "-copyts",                      # tetap copy timestamps
+        "-start_at_zero",               # mulai dari 0
 
+        "-c:v", "copy",                 # tetap tanpa re-encode
+        # "-c:v", "libx264", 
+        # "-preset", "ultrafast", 
+        # "-tune", "zerolatency",
         "-an",
+
         "-f", "rtsp",
         f"rtsp://localhost:8554/{name}"
     ]
