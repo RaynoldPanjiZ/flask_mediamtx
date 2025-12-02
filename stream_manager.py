@@ -17,7 +17,14 @@ def build_ffmpeg_command(name, source):
 
     # INPUT Source setup (rtsp, mp4, v4l2, etc)
     if source.startswith("rtsp://"):
-        cmd += ["-rtsp_transport", "tcp", "-i", source]
+        # cmd += ["-rtsp_transport", "tcp", "-i", source]
+        cmd += [
+            "-rtsp_transport", "tcp",
+            "-fflags", "+genpts",
+            "-use_wallclock_as_timestamps", "1",
+            "-reorder_queue_size", "0",
+            "-i", source
+        ]
     elif source.endswith(".mp4") or os.path.isfile(source):
         cmd += ["-re", "-stream_loop", "-1", "-i", source]
     elif source.startswith("/dev/video"):
@@ -26,20 +33,15 @@ def build_ffmpeg_command(name, source):
         raise ValueError(f"Sumber tidak dikenal: {source}")
 
     # OUTPUT Transcode to MediaMTX RTSP
-    # https://github.com/kukuhtw/ppv_stream_rust?tab=readme-ov-file
     cmd += [
-        "-fflags", "nobuffer",
-        "-flags", "low_delay",
-
         "-c:v", "libx264",
         "-preset", "ultrafast",
         "-tune", "zerolatency",
-
+        "-x264-params", "slice-max-size=1500",
+        "-pix_fmt", "yuv420p",
+        "-an",
         "-g", "30",
         "-keyint_min", "30",
-
-        "-an",
-
         "-f", "rtsp",
         f"rtsp://localhost:8554/{name}"
     ]
