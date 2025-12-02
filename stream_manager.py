@@ -22,7 +22,6 @@ def build_ffmpeg_command(name, source):
             "-rtsp_transport", "tcp",
             "-fflags", "+genpts",
             "-use_wallclock_as_timestamps", "1",
-            "-reorder_queue_size", "0",
             "-i", source
         ]
     elif source.endswith(".mp4") or os.path.isfile(source):
@@ -37,11 +36,12 @@ def build_ffmpeg_command(name, source):
         "-c:v", "libx264",
         "-preset", "ultrafast",
         "-tune", "zerolatency",
-        "-x264-params", "slice-max-size=1500",
+        "-crf", "24",           # sedikit lebih ringan
+        "-g", "25",
+        "-keyint_min", "25",
         "-pix_fmt", "yuv420p",
+
         "-an",
-        "-g", "30",
-        "-keyint_min", "30",
         "-f", "rtsp",
         f"rtsp://localhost:8554/{name}"
     ]
