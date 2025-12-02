@@ -17,29 +17,47 @@ def build_ffmpeg_command(name, source):
 
     # INPUT Source setup (rtsp, mp4, v4l2, etc)
     if source.startswith("rtsp://"):
-        # cmd += ["-rtsp_transport", "tcp", "-i", source]
         cmd += [
             "-rtsp_transport", "tcp",
             "-fflags", "+genpts",
             "-use_wallclock_as_timestamps", "1",
+            "-stimeout", "3000000",          # 3 detik timeout
+            "-reorder_queue_size", "0",
             "-i", source
         ]
     elif source.endswith(".mp4") or os.path.isfile(source):
-        cmd += ["-re", "-stream_loop", "-1", "-i", source]
+        cmd += [
+            "-re",
+            "-stream_loop", "-1",
+            "-fflags", "+genpts",
+            "-use_wallclock_as_timestamps", "1",
+            "-i", source
+        ]
     elif source.startswith("/dev/video"):
-        cmd += ["-f", "v4l2", "-i", source]
+        cmd += [
+            "-f", "v4l2",
+            "-thread_queue_size", "1024",
+            "-i", source
+        ]
     else:
         raise ValueError(f"Sumber tidak dikenal: {source}")
 
     # OUTPUT Transcode to MediaMTX RTSP
     cmd += [
-        "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-tune", "zerolatency",
-        "-crf", "24",           # sedikit lebih ringan
-        "-g", "25",
-        "-keyint_min", "25",
-        "-pix_fmt", "yuv420p",
+        "-c:v", "copy",
+        "-map", "0:v",
+
+        # H.264 compatibility improvement
+        "-bsf:v", "h264_mp4toannexb",
+
+        # RT buffer and timestamp stability
+        "-rtbufsize", "256M",
+        "-max_delay", "0",
+        "-muxdelay", "0",
+        "-muxpreload", "0",
+
+        # Required for some RTSP clients
+        "-flags", "+global_header",
 
         "-an",
         "-f", "rtsp",
