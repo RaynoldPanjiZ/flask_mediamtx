@@ -541,7 +541,7 @@ pathDefaults:
   # Size of the UDP buffer of the RTSP client.
   # This can be increased to mitigate packet losses.
   # It defaults to the default value of the operating system.
-  rtspUDPReadBufferSize: 0
+  rtspUDPReadBufferSize: 200
 
   ###############################################
   # Default path settings -> MPEG-TS source (when source is MPEG-TS)

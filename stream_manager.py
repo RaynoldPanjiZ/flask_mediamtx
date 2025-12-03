@@ -60,7 +60,6 @@ def build_ffmpeg_command(name, source):
 def process_stream(name, source):
     global running
     cmd = build_ffmpeg_command(name, source)
-
     print(f"[STREAM] Starting FFmpeg for {name}")
 
     p = subprocess.Popen(
