@@ -157,10 +157,10 @@ def process_stream(name, source):
 
     p = subprocess.Popen(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        stdin=subprocess.DEVNULL,
-        text=True,
+        # stdout=subprocess.PIPE,
+        # stderr=subprocess.PIPE,
+        # stdin=subprocess.DEVNULL,
+        # text=True,
         bufsize=1
     )
     processes.append(p)
