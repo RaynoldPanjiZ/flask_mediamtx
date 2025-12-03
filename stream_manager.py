@@ -5,7 +5,7 @@ import signal
 import time
 import os
 
-from config import STREAM_SOURCES
+from config import STREAM_SOURCES, FFMPEG_MODE
 
 processes = []   # simpan semua proses ffmpeg
 threads = []
@@ -15,46 +15,139 @@ running = True   # flag global
 def build_ffmpeg_command(name, source):
     cmd = ["ffmpeg"]
 
-    # INPUT Source setup (rtsp, mp4, v4l2, etc)
+    # ==================================================
+    # INPUT SOURCES
+    # ==================================================
     if source.startswith("rtsp://"):
         cmd += ["-rtsp_transport", "tcp", "-i", source]
+
     elif source.endswith(".mp4") or os.path.isfile(source):
         cmd += ["-re", "-stream_loop", "-1", "-i", source]
+
     elif source.startswith("/dev/video"):
-        cmd += ["-f", "v4l2", "-i", source]
+        cmd += ["-f", "v4l2", "-input_format", "mjpeg", "-i", source]
+
     else:
         raise ValueError(f"Sumber tidak dikenal: {source}")
 
-    # OUTPUT Transcode to MediaMTX RTSP
-    cmd += [
-        "-fflags", "+genpts",            # perbaiki PTS terus menerus
-        "-use_wallclock_as_timestamps", "1",
-        "-pkt_size", "1300",
-        "-flush_packets", "1",
+    # ==================================================
+    # OUTPUT PRESET VARIATIONS
+    # ==================================================
 
-        "-bsf:v", "h264_metadata=video_full_range_flag=1",
-        "-maxrate", "5M",
-        "-bufsize", "5M",
+    # ───────────────────────────────────────────────
+    # 1) MODE: COPY (PALING ringan)
+    # ───────────────────────────────────────────────
+    if FFMPEG_MODE == "copy":
+        cmd += [
+            "-c:v", "copy",
+            "-an",
+            "-f", "rtsp",
+            "-rtsp_transport", "tcp",
+            f"rtsp://localhost:8554/{name}"
+        ]
+        return cmd
 
-        "-max_interleave_delta", "0",   # cegah ffmpeg 'menumpuk' packet
-        "-muxdelay", "0",               # paksa RTP realtime
-        "-muxpreload", "0",             # no buffering
+    # ───────────────────────────────────────────────
+    # 2) MODE: REENCODE Standar (kompatibel WebRTC)
+    # ───────────────────────────────────────────────
+    if FFMPEG_MODE == "reencode":
+        cmd += [
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-tune", "zerolatency",
+            "-profile:v", "baseline",
+            "-level", "3.1",
+            "-pix_fmt", "yuv420p",
+            "-x264-params", "keyint=30:scenecut=0",
 
-        "-vsync", "1",                  # stabilisasi frame pacing
-        "-copyts",                      # tetap copy timestamps
-        "-start_at_zero",               # mulai dari 0
+            "-c:a", "aac",
+            "-b:a", "96k",
+            "-ar", "44100",
 
-        "-c:v", "copy",                 # tetap tanpa re-encode
-        # "-c:v", "libx264", 
-        # "-preset", "ultrafast", 
-        # "-tune", "zerolatency",
-        "-an",
+            "-f", "rtsp",
+            "-muxdelay", "0.1",
+            f"rtsp://localhost:8554/{name}"
+        ]
+        return cmd
 
-        "-f", "rtsp",
-        f"rtsp://localhost:8554/{name}"
-    ]
+    # ───────────────────────────────────────────────
+    # 3) MODE: ULTRA LOW LATENCY (paling smooth)
+    # ───────────────────────────────────────────────
+    if FFMPEG_MODE == "ultra":
+        cmd += [
+            "-fflags", "nobuffer",
+            "-flags", "low_delay",
+            "-strict", "experimental",
+            "-analyzeduration", "0",
+            "-probesize", "32",
 
-    return cmd
+            "-c:v", "libx264",
+            "-tune", "zerolatency",
+            "-preset", "ultrafast",
+            "-profile:v", "baseline",
+            "-level", "3.0",
+
+            "-x264-params", "keyint=15:min-keyint=15:no-scenecut",
+
+            "-pix_fmt", "yuv420p",
+
+            "-an",
+
+            "-f", "rtsp",
+            "-muxdelay", "0.01",
+            "-rtsp_transport", "tcp",
+            f"rtsp://localhost:8554/{name}"
+        ]
+        return cmd
+
+    # ───────────────────────────────────────────────
+    # 4) MODE: ADAPTIVE (bitrate + fps otomatis)
+    # ───────────────────────────────────────────────
+    if FFMPEG_MODE == "adaptive":
+        cmd += [
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-tune", "zerolatency",
+            "-crf", "23",                 # kualitas adaptif
+            "-maxrate", "3M",             # batasi bitrate
+            "-bufsize", "6M",
+            "-profile:v", "baseline",
+            "-pix_fmt", "yuv420p",
+            "-x264-params", "keyint=30",
+
+            "-an",
+
+            "-f", "rtsp",
+            "-rtsp_transport", "tcp",
+            f"rtsp://localhost:8554/{name}"
+        ]
+        return cmd
+
+    # ───────────────────────────────────────────────
+    # 5) MODE: FORCE ENCODE (hard reencode untuk source buruk)
+    # ───────────────────────────────────────────────
+    if FFMPEG_MODE == "force":
+        cmd += [
+            "-vf", "fps=25",
+            "-c:v", "libx264",
+            "-preset", "faster",
+            "-tune", "zerolatency",
+            "-profile:v", "baseline",
+
+            "-pix_fmt", "yuv420p",
+
+            "-c:a", "aac",
+            "-ar", "44100",
+            "-b:a", "96k",
+
+            "-f", "rtsp",
+            "-rtsp_transport", "tcp",
+            f"rtsp://localhost:8554/{name}"
+        ]
+        return cmd
+
+    # Default fallback
+    raise ValueError(f"Mode FFMPEG tidak valid: {FFMPEG_MODE}")
 
 
 def process_stream(name, source):
