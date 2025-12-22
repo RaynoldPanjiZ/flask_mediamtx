@@ -3,12 +3,14 @@ import subprocess
 import threading
 import os
 
-MEDIAMTX_IP = "192.168.45.39"
+# MEDIAMTX_IP = "192.168.45.39"
+MEDIAMTX_IP = "192.168.1.5"
 
 sources = {
-    # "mp41": "static/video/0423.mp4",
-    # "cam1": "rtsp://192.168.1.11:8554/test",
-    "cam1": "rtsp://admin:aery2021!@192.168.45.167:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif"
+    # "0": "static/video/0423.mp4",
+    # "0": "rtsp://192.168.1.11/live/ch00_0",
+    "1": "rtsp://192.168.1.13:8554/test",
+    # "2": "rtsp://admin:aery2021!@192.168.45.167:554/cam/realmonitor?channel=1&subtype=0&unicast=true&proto=Onvif"
 }
 
 def build_ffmpeg_command(name, source):
@@ -52,7 +54,7 @@ def build_ffmpeg_command(name, source):
         "-c:a", "copy",     # copy audio codec
         "-an",
         "-f", "rtsp",
-        f"rtsp://localhost:8554/{name}"
+        f"rtsp://localhost:8554/live/stream{name}"
     ]
 
     return cmd
