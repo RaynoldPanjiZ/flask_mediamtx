@@ -19,7 +19,7 @@ def start_record(channel):
         os.makedirs("recordings")
 
     # record from MediaMTX RTSP proxy
-    src = f"rtsp://{MEDIAMTX_HOST}:8554/{channel}"
+    src = f"rtsp://{MEDIAMTX_HOST}:8554/live/stream{channel}"
 
     cmd = [
         "ffmpeg",

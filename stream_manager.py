@@ -43,7 +43,7 @@ def build_ffmpeg_command(name, source):
             "-an",
             "-f", "rtsp",
             "-rtsp_transport", "tcp",
-            f"rtsp://localhost:8554/{name}"
+            f"rtsp://localhost:8554/live/stream{name}"
         ]
         return cmd
 
@@ -66,7 +66,7 @@ def build_ffmpeg_command(name, source):
 
             "-f", "rtsp",
             "-muxdelay", "0.1",
-            f"rtsp://localhost:8554/{name}"
+            f"rtsp://localhost:8554/live/stream{name}"
         ]
         return cmd
 
@@ -96,7 +96,7 @@ def build_ffmpeg_command(name, source):
             "-f", "rtsp",
             "-muxdelay", "0.01",
             "-rtsp_transport", "tcp",
-            f"rtsp://localhost:8554/{name}"
+            f"rtsp://localhost:8554/live/stream{name}"
         ]
         return cmd
 
@@ -119,7 +119,7 @@ def build_ffmpeg_command(name, source):
 
             "-f", "rtsp",
             "-rtsp_transport", "tcp",
-            f"rtsp://localhost:8554/{name}"
+            f"rtsp://localhost:8554/live/stream{name}"
         ]
         return cmd
 
@@ -142,7 +142,7 @@ def build_ffmpeg_command(name, source):
 
             "-f", "rtsp",
             "-rtsp_transport", "tcp",
-            f"rtsp://localhost:8554/{name}"
+            f"rtsp://localhost:8554/live/stream{name}"
         ]
         return cmd
 
